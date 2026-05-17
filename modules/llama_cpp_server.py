@@ -485,7 +485,11 @@ class LlamaServer:
 
             if path.exists():
                 cmd += ["--mmproj", str(path)]
-        if shared.args.model_draft not in [None, 'None']:
+        spec_type = shared.args.spec_type
+        model_draft_set = shared.args.model_draft not in [None, 'None']
+        uses_draft_model_flags = spec_type in ('none', 'draft-mtp') and model_draft_set
+        uses_draft_max = uses_draft_model_flags or spec_type == 'draft-mtp'
+        if uses_draft_model_flags:
             path = resolve_model_path(shared.args.model_draft)
 
             if path.is_file():
@@ -494,22 +498,19 @@ class LlamaServer:
                 model_file = sorted(path.glob('*.gguf'))[0]
 
             cmd += ["--model-draft", str(model_file)]
-            if shared.args.draft_max > 0:
-                cmd += ["--spec-draft-n-max", str(shared.args.draft_max)]
             if shared.args.gpu_layers_draft > 0:
                 cmd += ["--gpu-layers-draft", str(shared.args.gpu_layers_draft)]
             if shared.args.device_draft:
                 cmd += ["--device-draft", shared.args.device_draft]
-            if shared.args.ctx_size_draft > 0:
-                cmd += ["--ctx-size-draft", str(shared.args.ctx_size_draft)]
-        if shared.args.spec_type != 'none':
-            cmd += ["--spec-type", shared.args.spec_type]
-            if shared.args.spec_type == 'ngram-mod':
+        if uses_draft_max and shared.args.draft_max > 0:
+            cmd += ["--spec-draft-n-max", str(shared.args.draft_max)]
+        if spec_type != 'none':
+            cmd += ["--spec-type", spec_type]
+            if spec_type == 'ngram-mod':
                 cmd += ["--spec-ngram-mod-n-match", str(shared.args.spec_ngram_size_n)]
-                cmd += ["--spec-ngram-mod-n-max", str(shared.args.draft_max)]
                 cmd += ["--spec-ngram-mod-n-min", str(shared.args.spec_ngram_size_m)]
-            elif shared.args.spec_type in ('ngram-simple', 'ngram-map-k', 'ngram-map-k4v'):
-                prefix = f"--spec-{shared.args.spec_type}"
+            elif spec_type in ('ngram-simple', 'ngram-map-k', 'ngram-map-k4v'):
+                prefix = f"--spec-{spec_type}"
                 cmd += [f"{prefix}-size-n", str(shared.args.spec_ngram_size_n)]
                 cmd += [f"{prefix}-size-m", str(shared.args.spec_ngram_size_m)]
                 cmd += [f"{prefix}-min-hits", str(shared.args.spec_ngram_min_hits)]
