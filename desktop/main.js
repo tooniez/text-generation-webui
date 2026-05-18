@@ -21,6 +21,9 @@ const userArgs = dashIdx >= 0 ? argv.slice(dashIdx + 1) : argv;
 
 app.setName(TITLE);
 
+// We only load http://127.0.0.1, so skip Chromium's DNS-over-HTTPS provider probes.
+app.commandLine.appendSwitch("disable-features", "DnsOverHttps,DnsOverHttpsUpgrade");
+
 // Skip Chromium's hardware video pipeline, which probes VAAPI at startup and
 // logs a noisy version-mismatch error on systems with older libva. We don't
 // render video content anyway. (--no-sandbox / --no-zygote are passed by the
