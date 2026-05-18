@@ -40,7 +40,13 @@ function resolveUserDataDir() {
   const shared = path.join(baseDir, "..", "..", "user_data");
   return fs.existsSync(shared) ? shared : path.join(baseDir, "..", "user_data");
 }
-const stateFile = path.join(resolveUserDataDir(), "cache", "window-state.json");
+const userDataDir = resolveUserDataDir();
+const stateFile = path.join(userDataDir, "cache", "window-state.json");
+
+// Redirect Electron's per-app data (cookies, GPUCache, Local Storage, etc.)
+// out of ~/.config/TextGen and into user_data/cache/electron so everything
+// the app writes lives under the project's user_data tree.
+app.setPath("userData", path.join(userDataDir, "cache", "electron"));
 
 // css/ sits next to main.js in portable builds, one level up in dev.
 const portableIcon = path.join(baseDir, "css", "icon.png");
