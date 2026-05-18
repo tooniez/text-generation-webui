@@ -798,6 +798,23 @@ def update_token_display_from_state(state):
     max_tokens = state.get('truncation_length') or 0
     percentage = (total / max_tokens) * 100 if max_tokens > 0 else 0
     new_value = f"{total:,} / {max_tokens:,} tokens ({percentage:.1f}%)"
+
+    if gen_n > 0:
+        # A drop in gen_n means a new generation (backends reset to 0 per turn).
+        last_seen = getattr(shared.model, '_tps_last_gen_n', None)
+        if last_seen is None or gen_n < last_seen:
+            shared.model._tps_start_time = time.time()
+            shared.model._tps_baseline = gen_n
+        shared.model._tps_last_gen_n = gen_n
+
+        elapsed = time.time() - shared.model._tps_start_time
+        baseline = shared.model._tps_baseline
+        if gen_n > baseline and elapsed > 0:
+            tps = (gen_n - baseline) / elapsed
+            new_value += f"<br>{gen_n:,} generated ({tps:.1f} t/s)"
+        else:
+            new_value += f"<br>{gen_n:,} generated"
+
     if new_value == getattr(shared.model, '_last_token_display', None):
         return gr.update()
     shared.model._last_token_display = new_value
