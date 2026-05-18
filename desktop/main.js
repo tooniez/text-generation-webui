@@ -42,6 +42,10 @@ function resolveUserDataDir() {
 }
 const stateFile = path.join(resolveUserDataDir(), "cache", "window-state.json");
 
+// css/ sits next to main.js in portable builds, one level up in dev.
+const portableIcon = path.join(baseDir, "css", "icon.png");
+const iconPath = fs.existsSync(portableIcon) ? portableIcon : path.join(baseDir, "..", "css", "icon.png");
+
 let serverProcess = null;
 let mainWindow = null;
 let portCheckInterval = null;
@@ -110,6 +114,7 @@ function createWindow(port) {
   mainWindow = new BrowserWindow({
     ...bounds,
     title: TITLE,
+    icon: iconPath,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
