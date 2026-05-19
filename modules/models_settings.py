@@ -69,6 +69,8 @@ def get_model_metadata(model):
             elif k.endswith('.block_count'):
                 model_settings['gpu_layers'] = -1
                 model_settings['max_gpu_layers'] = metadata[k] + 1
+            elif k.endswith('.nextn_predict_layers') and metadata[k] > 0:
+                model_settings['spec_type'] = 'draft-mtp'
 
         if 'tokenizer.chat_template' in metadata:
             template = metadata['tokenizer.chat_template']
@@ -233,6 +235,9 @@ def apply_model_settings_to_state(model, state):
     for k in model_settings:
         if k in state and k != 'gpu_layers':  # Skip gpu_layers, handle separately
             state[k] = model_settings[k]
+
+    if state.get('spec_type') == 'draft-mtp' and model_settings.get('spec_type') != 'draft-mtp':
+        state['spec_type'] = 'none'
 
     # Auto-detect a sibling mmproj when the user hasn't saved one for this model.
     # Bare filenames (from user_data/mmproj/) persist across model switches;
