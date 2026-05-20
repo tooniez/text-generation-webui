@@ -28,10 +28,11 @@ def sanitize_filename(name):
 
 def _is_path_allowed(abs_path_str):
     """Check if a path is under the configured user_data directory."""
-    abs_path = Path(abs_path_str).resolve()
-    user_data_resolved = shared.user_data_dir.resolve()
+    # normpath (not resolve) preserves symlinks so a symlinked user_data/logs works.
+    abs_path = Path(os.path.normpath(os.path.abspath(abs_path_str)))
+    user_data_base = Path(os.path.normpath(os.path.abspath(shared.user_data_dir)))
     try:
-        abs_path.relative_to(user_data_resolved)
+        abs_path.relative_to(user_data_base)
         return True
     except ValueError:
         return False
