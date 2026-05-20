@@ -30,7 +30,7 @@ from modules.html_generator import (
 )
 from modules.image_utils import open_image_safely
 from modules.logging_colors import logger
-from modules.reasoning import THINKING_FORMATS
+from modules.reasoning import THINKING_FORMATS, extract_reasoning
 from modules.text_generation import (
     generate_reply,
     get_encoded_length,
@@ -247,11 +247,14 @@ def _expand_tool_sequence(tool_seq):
     for item in tool_seq:
         if 'tool_calls' in item:
             deserialized = _deserialize_tool_call_arguments(item['tool_calls'])
-            messages.append({
+            msg = {
                 "role": "assistant",
                 "content": item.get('content', ''),
                 "tool_calls": deserialized
-            })
+            }
+            if item.get('reasoning_content'):
+                msg['reasoning_content'] = item['reasoning_content']
+            messages.append(msg)
             for tc in item['tool_calls']:
                 tc_id = tc.get('id', '')
                 if tc_id:
@@ -1586,8 +1589,12 @@ def generate_chat_reply_wrapper(text, state, regenerate=False, _continue=False):
             tc_headers.append(f'{fn_name}({args_summary})')
 
         seq_entry = {'tool_calls': serialized}
-        if content_prefix.strip():
-            clean = _strip_channel_tokens(content_prefix)
+        reasoning, body = extract_reasoning(content_prefix)
+        reasoning = (reasoning or '').strip()
+        if reasoning:
+            seq_entry['reasoning_content'] = reasoning
+        if body.strip():
+            clean = _strip_channel_tokens(body)
             if clean:
                 seq_entry['content'] = clean
         seq.append(seq_entry)
